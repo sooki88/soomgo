@@ -1,5 +1,22 @@
 input {
   outline: none;
+  width: 280px;
+  height: 40px;
+  padding-left: 8px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+}
+
+button {
+  width: 280px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #dedede;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: auto;
 }
 
 .invalid-input {
@@ -8,4 +25,11 @@ input {
 
 .invalid-input:focus {
   border: 1px solid red;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  place-content: center;
+  place-items: center;
 }
