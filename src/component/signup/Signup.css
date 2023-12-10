@@ -1,0 +1,11 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  place-content: center;
+  place-items: center;
+  gap: 16px;
+}
+
+.invalid-input {
+  border: 1px solid red;
+}
