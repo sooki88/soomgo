@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "@remix-run/react";
 
-import { Input } from "../components";
+import { Input } from "@login-form/components";
 
 interface Info {
   value: string;
-  error: boolean | undefined;
+  error: boolean;
 }
 
 interface Target {
@@ -22,15 +22,15 @@ export default function SignUpPage() {
   const target = useRef<Target>({
     email: {
       value: "",
-      error: undefined,
+      error: false,
     },
     password: {
       value: "",
-      error: undefined,
+      error: false,
     },
     confirmedPassword: {
       value: "",
-      error: undefined,
+      error: false,
     },
   });
 
@@ -43,16 +43,6 @@ export default function SignUpPage() {
     email.error ||
     password.error ||
     confirmedPassword.error;
-
-  const login = (data: { email: string; password: string }) => {
-    fetch("https://bootcamp-api.codeit.kr/api/sign-in", {
-      method: "post",
-      headers: {
-        "Contents-Type": "aplication/json",
-      },
-      body: JSON.stringify(data),
-    });
-  };
 
   return (
     <div
@@ -85,6 +75,7 @@ export default function SignUpPage() {
 
       <Input
         name="password"
+        type="password"
         target={target}
         pattern="(?=.*\d)(?=.*[a-z]).{8,}"
         render={() => render({})}
@@ -97,14 +88,14 @@ export default function SignUpPage() {
 
       <Input
         name="confirmedPassword"
+        type="password"
         target={target}
-        pattern="(?=.*\d)(?=.*[a-z]).{8,}"
         render={() => render({})}
         placeholder="비밀번호를 확인해주세요."
         customErrors={[
           {
             visible: (value, focused) =>
-              focused === false && password !== confirmedPassword,
+              focused === true && password.value !== value,
             text: "비밀번호가 일치하지 않아요.",
           },
         ]}
@@ -117,17 +108,7 @@ export default function SignUpPage() {
       >
         로그인
       </button>
-      <button
-        onClick={() => {
-          login({
-            email: email.value,
-            password: password.value,
-          });
-        }}
-        disabled={buttonDisabled}
-      >
-        회원가입
-      </button>
+      <button disabled={buttonDisabled}>회원가입</button>
     </div>
   );
 }

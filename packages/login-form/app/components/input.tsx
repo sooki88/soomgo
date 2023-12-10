@@ -5,7 +5,7 @@ import {
   type FocusEvent,
   type MutableRefObject,
 } from "react";
-import { ErrorMessage } from "./error-message";
+import { ErrorMessage } from "@login-form/components";
 
 export function Input<T>(
   props: InputHTMLAttributes<HTMLInputElement> & {
@@ -19,27 +19,30 @@ export function Input<T>(
     }[];
   }
 ) {
-  const { customErrors, pattern, erorrMessage, target, name } = props;
+  const { customErrors, pattern, erorrMessage, target, name, render, ...rest } =
+    props;
+
+  const object = target.current[name] as { value: string; error: boolean };
 
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState<boolean>();
+  const valid = new RegExp(pattern ?? "").test(value);
 
   const empty = value === "";
-  const valid = new RegExp(pattern ?? "").test(value);
-  const customError = customErrors?.some(
-    (error) => error.visible(value, focused) === true
-  );
+  const customError =
+    customErrors?.some((error) => error.visible(value, focused) === true) ??
+    false;
 
   const emptyError = focused === false && empty;
   const validError = !empty && valid === false;
 
   const error = customError || emptyError || validError;
+  object.error = error;
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-
-    target.current[name]?.value = "test";
-
+    const v = e.target.value;
+    Promise.resolve(setValue(v)).then(render);
+    object.value = v;
     props.onChange?.(e);
   };
 
@@ -59,7 +62,7 @@ export function Input<T>(
     <div className="center">
       <input
         className={error ? "invalid-input" : ""}
-        {...props}
+        {...rest}
         onChange={onChange}
         onFocus={onFocus}
         onBlur={onBlur}
@@ -72,7 +75,7 @@ export function Input<T>(
       )}
       {customErrors?.map((error, key) => {
         const { visible, text } = error;
-        if (!visible) {
+        if (!visible(value, focused)) {
           return null;
         }
 
