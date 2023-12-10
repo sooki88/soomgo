@@ -1,40 +1,48 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "@remix-run/react";
 
 import { Input } from "../components";
 
-export default function Test() {
+interface Info {
+  value: string;
+  error: boolean | undefined;
+}
+
+interface Target {
+  email: Info;
+  password: Info;
+  confirmedPassword: Info;
+}
+
+export default function SignUpPage() {
   const naviate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [emailFocused, setEmailFocused] = useState<boolean>();
-  const [emailValid, setEmailValid] = useState<boolean>();
+  const [, render] = useState({});
 
-  const [password, setPassword] = useState("");
-  const [passwordFocused, setPasswordFocused] = useState<boolean>();
-  const [passwordValid, setPasswordValid] = useState<boolean>();
+  const target = useRef<Target>({
+    email: {
+      value: "",
+      error: undefined,
+    },
+    password: {
+      value: "",
+      error: undefined,
+    },
+    confirmedPassword: {
+      value: "",
+      error: undefined,
+    },
+  });
 
-  const [confirmedPassword, setConfirmedPassword] = useState("");
-  const [confirmedPasswordFocused, setConfirmedPasswordFocused] =
-    useState<boolean>();
-
-  const alreadyExist = email === "test@codeit.com";
-
-  const emailRegex = /^.+@.+\..{2,4}$/g;
-  const passwordRegex = /(?=.*\d)(?=.*[a-z]).{8,}/g;
-
-  const emailError = alreadyExist || emailValid === false;
-  const passwordError = passwordValid === false;
-  const confirmedPasswordError =
-    confirmedPasswordFocused && password !== confirmedPassword;
+  const { email, password, confirmedPassword } = target.current;
 
   const buttonDisabled =
-    email === "" ||
-    password === "" ||
-    confirmedPassword === "" ||
-    emailError ||
-    passwordError ||
-    confirmedPasswordError;
+    email.value === "" ||
+    password.value === "" ||
+    confirmedPassword.value === "" ||
+    email.error ||
+    password.error ||
+    confirmedPassword.error;
 
   const login = (data: { email: string; password: string }) => {
     fetch("https://bootcamp-api.codeit.kr/api/sign-in", {
@@ -44,12 +52,6 @@ export default function Test() {
       },
       body: JSON.stringify(data),
     });
-  };
-
-  const onEmailChange = (e: any) => {
-    const email = e.target.value;
-    setEmailValid(emailRegex.test(email));
-    setEmail(email);
   };
 
   return (
@@ -64,75 +66,45 @@ export default function Test() {
       }}
     >
       <Input
-        value={email}
+        name="email"
+        target={target}
+        pattern="^.+@.+\..{2,4}$"
+        render={() => render({})}
         placeholder="이메일을 입력해주세요."
-        onChange={onEmailChange}
-        onFocus={() => {
-          setEmailFocused(true);
+        erorrMessage={{
+          empty: "이메일을 입력해주세요.",
+          valid: "올바른 이메일 주소가 아닙니다.",
         }}
-        onBlur={() => {
-          setEmailFocused(false);
-        }}
-        errors={[
+        customErrors={[
           {
-            visible: alreadyExist,
+            visible: (value) => value === "test@codeit.com",
             text: "이미 사용 중인 이메일입니다.",
           },
-          {
-            visible: emailFocused === false && email === "",
-            text: "이메일을 입력해주세요.",
-          },
-          {
-            visible: email !== "" && emailValid === false,
-            text: "올바른 이메일 주소가 아닙니다.",
-          },
         ]}
       />
 
       <Input
-        type="password"
-        value={password}
+        name="password"
+        target={target}
+        pattern="(?=.*\d)(?=.*[a-z]).{8,}"
+        render={() => render({})}
         placeholder="비밀번호를 입력해주세요."
-        onChange={(e) => {
-          const password = e.target.value;
-          setPasswordValid(passwordRegex.test(password));
-          setPassword(password);
+        erorrMessage={{
+          empty: "비밀번호를 입력해주세요.",
+          valid: "비밀번호는 영문, 숫자 조합 8자 이상 입력해 주세요.",
         }}
-        onFocus={() => {
-          setPasswordFocused(true);
-        }}
-        onBlur={() => {
-          setPasswordFocused(false);
-        }}
-        errors={[
-          {
-            visible: password !== "" && passwordValid === false,
-            text: "비밀번호는 영문, 숫자 조합 8자 이상 입력해 주세요.",
-          },
-          {
-            visible: passwordFocused === false && password === "",
-            text: "비밀번호를 입력해주세요.",
-          },
-        ]}
       />
 
       <Input
-        type="password"
-        value={confirmedPassword}
+        name="confirmedPassword"
+        target={target}
+        pattern="(?=.*\d)(?=.*[a-z]).{8,}"
+        render={() => render({})}
         placeholder="비밀번호를 확인해주세요."
-        onChange={(e) => {
-          const password = e.target.value;
-          setConfirmedPassword(password);
-        }}
-        onFocus={() => {
-          setConfirmedPasswordFocused(true);
-        }}
-        onBlur={() => {
-          setConfirmedPasswordFocused(false);
-        }}
-        errors={[
+        customErrors={[
           {
-            visible: confirmedPasswordError ?? false,
+            visible: (value, focused) =>
+              focused === false && password !== confirmedPassword,
             text: "비밀번호가 일치하지 않아요.",
           },
         ]}
@@ -148,8 +120,8 @@ export default function Test() {
       <button
         onClick={() => {
           login({
-            email,
-            password,
+            email: email.value,
+            password: password.value,
           });
         }}
         disabled={buttonDisabled}
