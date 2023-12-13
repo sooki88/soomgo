@@ -1,4 +1,4 @@
-import { LinkToNextPage } from "../sharing/components/buttons/LinkToNextPage";
+import { LinkToNextPage } from "../components/buttons/LinkToNextPage";
 import styles from "./LandingPage.module.scss";
 
 export function LandingPage() {
