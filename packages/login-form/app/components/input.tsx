@@ -24,25 +24,37 @@ export function Input<T>(
 
   const object = target.current[name] as { value: string; error: boolean };
 
-  const [value, setValue] = useState("");
+  const value = object.value;
   const [focused, setFocused] = useState<boolean>();
-  const valid = new RegExp(pattern ?? "").test(value);
 
-  const empty = value === "";
-  const customError =
-    customErrors?.some((error) => error.visible(value, focused) === true) ??
-    false;
+  const getErrors = (v: string) => {
+    const valid = new RegExp(pattern ?? "").test(v);
 
-  const emptyError = focused === false && empty;
-  const validError = !empty && valid === false;
+    const empty = v === "";
+    const customError =
+      customErrors?.some((error) => error.visible(v, focused) === true) ??
+      false;
 
+    const emptyError = focused === false && empty;
+    const validError = !empty && valid === false;
+
+    return {
+      customError,
+      emptyError,
+      validError,
+    };
+  };
+
+  const { customError, emptyError, validError } = getErrors(value);
   const error = customError || emptyError || validError;
-  object.error = error;
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
-    Promise.resolve(setValue(v)).then(render);
     object.value = v;
+    const { customError, emptyError, validError } = getErrors(v);
+
+    object.error = customError || emptyError || validError;
+    render();
     props.onChange?.(e);
   };
 

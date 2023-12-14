@@ -1,25 +1,21 @@
-import { useRef, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "@remix-run/react";
 
 import { Input } from "@login-form/components";
-
-interface Info {
-  value: string;
-  error: boolean;
-}
-
-interface Target {
-  email: Info;
-  password: Info;
-  confirmedPassword: Info;
-}
+import { localStorageUtil } from "@login-form/util/local-storage";
+import { useCheckEmail } from "@login-form/apis/check-email";
+import { useInput } from "@login-form/hooks/use-input";
 
 export default function SignUpPage() {
   const naviate = useNavigate();
 
-  const [, render] = useState({});
+  useEffect(() => {
+    if (localStorageUtil.accessToken.get()) {
+      naviate("/folder");
+    }
+  }, [naviate]);
 
-  const target = useRef<Target>({
+  const { target, render } = useInput({
     email: {
       value: "",
       error: false,
@@ -36,6 +32,8 @@ export default function SignUpPage() {
 
   const { email, password, confirmedPassword } = target.current;
 
+  const { response, refetch } = useCheckEmail(email.value);
+
   const buttonDisabled =
     email.value === "" ||
     password.value === "" ||
@@ -43,6 +41,20 @@ export default function SignUpPage() {
     email.error ||
     password.error ||
     confirmedPassword.error;
+
+  const alreadyExistError = response?.status === 409;
+
+  const handleOnChange = () => {
+    if (!alreadyExistError && email.error) {
+      return;
+    }
+
+    if (email.value === "") {
+      return;
+    }
+
+    refetch(email.value);
+  };
 
   return (
     <div
@@ -61,13 +73,14 @@ export default function SignUpPage() {
         pattern="^.+@.+\..{2,4}$"
         render={() => render({})}
         placeholder="이메일을 입력해주세요."
+        onChange={handleOnChange}
         erorrMessage={{
           empty: "이메일을 입력해주세요.",
           valid: "올바른 이메일 주소가 아닙니다.",
         }}
         customErrors={[
           {
-            visible: (value) => value === "test@codeit.com",
+            visible: () => alreadyExistError,
             text: "이미 사용 중인 이메일입니다.",
           },
         ]}
@@ -103,7 +116,7 @@ export default function SignUpPage() {
 
       <button
         onClick={() => {
-          naviate("/login");
+          naviate("/sign-in");
         }}
       >
         로그인

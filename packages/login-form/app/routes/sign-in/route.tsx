@@ -1,12 +1,15 @@
-import { useRef, useState } from "react";
+import { type KeyboardEvent, useRef } from "react";
 
 import { Input } from "@login-form/components";
-import { signIn } from "@login-form/api/login";
+import { signIn } from "@login-form/apis/login";
+import { localStorageUtil } from "@login-form/util/local-storage";
+import { useNavigate } from "@remix-run/react";
+import { useInput } from "@login-form/hooks/use-input";
 
 export default function SignInPage() {
-  const [, render] = useState({});
+  const navigator = useNavigate();
 
-  const target = useRef({
+  const { target, render } = useInput({
     email: {
       value: "",
       error: false,
@@ -17,6 +20,8 @@ export default function SignInPage() {
     },
   });
 
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   const { email, password } = target.current;
 
   const buttonDisabled =
@@ -24,6 +29,26 @@ export default function SignInPage() {
     password.value === "" ||
     email.error ||
     password.error;
+
+  const onEnterKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      buttonRef.current?.click();
+    }
+  };
+
+  const onSignInButtonClick = async () => {
+    const result = await signIn({
+      email: email.value,
+      password: password.value,
+    });
+
+    if (result.status === 200) {
+      localStorageUtil.accessToken.set(result.data.data.accessToken);
+      navigator("/folder");
+    }
+  };
 
   return (
     <div
@@ -41,6 +66,7 @@ export default function SignInPage() {
         target={target}
         pattern="^.+@.+\..{2,4}$"
         render={() => render({})}
+        onKeyDown={onEnterKeyDown}
         placeholder="이메일을 입력해주세요."
         erorrMessage={{
           empty: "이메일을 입력해주세요.",
@@ -54,6 +80,7 @@ export default function SignInPage() {
         target={target}
         pattern="(?=.*\d)(?=.*[a-z]).{8,}"
         render={() => render({})}
+        onKeyDown={onEnterKeyDown}
         placeholder="비밀번호를 입력해주세요."
         erorrMessage={{
           empty: "비밀번호를 입력해주세요.",
@@ -62,16 +89,13 @@ export default function SignInPage() {
       />
 
       <button
-        onClick={() => {
-          signIn({
-            email: email.value,
-            password: password.value,
-          });
-        }}
+        ref={buttonRef}
+        disabled={buttonDisabled}
+        onClick={onSignInButtonClick}
       >
         로그인
       </button>
-      <button disabled={buttonDisabled}>회원가입</button>
+      <button onClick={() => navigator("/")}>회원가입</button>
     </div>
   );
 }
