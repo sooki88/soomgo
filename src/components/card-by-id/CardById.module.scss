@@ -1,0 +1,31 @@
+@import "../../styles/global.scss";
+
+.container {
+  width: 100%;
+  background-color: #fff;
+  box-shadow: 0px 2px 12px 0px #00000014;
+  border-radius: 1.6rem;
+}
+
+.sender {
+  img {
+    height: 5.6rem;
+    border-radius: 50%;
+  }
+}
+
+.blue {
+  background-color: $blue-100;
+}
+
+.purple {
+  background-color: $purple-100;
+}
+
+.green {
+  background-color: $green-100;
+}
+
+.orange {
+  background-color: $orange-100;
+}
