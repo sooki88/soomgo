@@ -1,55 +1,59 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "@remix-run/react";
 
-import { Input } from "../components";
+import { Input } from "@login-form/components";
+import { localStorageUtil } from "@login-form/util/local-storage";
+import { useCheckEmail } from "@login-form/apis/check-email";
+import { useInput } from "@login-form/hooks/use-input";
 
-export default function Test() {
+export default function SignUpPage() {
   const naviate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [emailFocused, setEmailFocused] = useState<boolean>();
-  const [emailValid, setEmailValid] = useState<boolean>();
+  useEffect(() => {
+    if (localStorageUtil.accessToken.get()) {
+      naviate("/folder");
+    }
+  }, [naviate]);
 
-  const [password, setPassword] = useState("");
-  const [passwordFocused, setPasswordFocused] = useState<boolean>();
-  const [passwordValid, setPasswordValid] = useState<boolean>();
+  const { target, render } = useInput({
+    email: {
+      value: "",
+      error: false,
+    },
+    password: {
+      value: "",
+      error: false,
+    },
+    confirmedPassword: {
+      value: "",
+      error: false,
+    },
+  });
 
-  const [confirmedPassword, setConfirmedPassword] = useState("");
-  const [confirmedPasswordFocused, setConfirmedPasswordFocused] =
-    useState<boolean>();
+  const { email, password, confirmedPassword } = target.current;
 
-  const alreadyExist = email === "test@codeit.com";
-
-  const emailRegex = /^.+@.+\..{2,4}$/g;
-  const passwordRegex = /(?=.*\d)(?=.*[a-z]).{8,}/g;
-
-  const emailError = alreadyExist || emailValid === false;
-  const passwordError = passwordValid === false;
-  const confirmedPasswordError =
-    confirmedPasswordFocused && password !== confirmedPassword;
+  const { response, refetch } = useCheckEmail(email.value);
 
   const buttonDisabled =
-    email === "" ||
-    password === "" ||
-    confirmedPassword === "" ||
-    emailError ||
-    passwordError ||
-    confirmedPasswordError;
+    email.value === "" ||
+    password.value === "" ||
+    confirmedPassword.value === "" ||
+    email.error ||
+    password.error ||
+    confirmedPassword.error;
 
-  const login = (data: { email: string; password: string }) => {
-    fetch("https://bootcamp-api.codeit.kr/api/sign-in", {
-      method: "post",
-      headers: {
-        "Contents-Type": "aplication/json",
-      },
-      body: JSON.stringify(data),
-    });
-  };
+  const alreadyExistError = response?.status === 409;
 
-  const onEmailChange = (e: any) => {
-    const email = e.target.value;
-    setEmailValid(emailRegex.test(email));
-    setEmail(email);
+  const handleOnChange = () => {
+    if (!alreadyExistError && email.error) {
+      return;
+    }
+
+    if (email.value === "") {
+      return;
+    }
+
+    refetch(email.value);
   };
 
   return (
@@ -64,75 +68,47 @@ export default function Test() {
       }}
     >
       <Input
-        value={email}
+        name="email"
+        target={target}
+        pattern="^.+@.+\..{2,4}$"
+        render={() => render({})}
         placeholder="이메일을 입력해주세요."
-        onChange={onEmailChange}
-        onFocus={() => {
-          setEmailFocused(true);
+        onChange={handleOnChange}
+        erorrMessage={{
+          empty: "이메일을 입력해주세요.",
+          valid: "올바른 이메일 주소가 아닙니다.",
         }}
-        onBlur={() => {
-          setEmailFocused(false);
-        }}
-        errors={[
+        customErrors={[
           {
-            visible: alreadyExist,
+            visible: () => alreadyExistError,
             text: "이미 사용 중인 이메일입니다.",
           },
-          {
-            visible: emailFocused === false && email === "",
-            text: "이메일을 입력해주세요.",
-          },
-          {
-            visible: email !== "" && emailValid === false,
-            text: "올바른 이메일 주소가 아닙니다.",
-          },
         ]}
       />
 
       <Input
+        name="password"
         type="password"
-        value={password}
+        target={target}
+        pattern="(?=.*\d)(?=.*[a-z]).{8,}"
+        render={() => render({})}
         placeholder="비밀번호를 입력해주세요."
-        onChange={(e) => {
-          const password = e.target.value;
-          setPasswordValid(passwordRegex.test(password));
-          setPassword(password);
+        erorrMessage={{
+          empty: "비밀번호를 입력해주세요.",
+          valid: "비밀번호는 영문, 숫자 조합 8자 이상 입력해 주세요.",
         }}
-        onFocus={() => {
-          setPasswordFocused(true);
-        }}
-        onBlur={() => {
-          setPasswordFocused(false);
-        }}
-        errors={[
-          {
-            visible: password !== "" && passwordValid === false,
-            text: "비밀번호는 영문, 숫자 조합 8자 이상 입력해 주세요.",
-          },
-          {
-            visible: passwordFocused === false && password === "",
-            text: "비밀번호를 입력해주세요.",
-          },
-        ]}
       />
 
       <Input
+        name="confirmedPassword"
         type="password"
-        value={confirmedPassword}
+        target={target}
+        render={() => render({})}
         placeholder="비밀번호를 확인해주세요."
-        onChange={(e) => {
-          const password = e.target.value;
-          setConfirmedPassword(password);
-        }}
-        onFocus={() => {
-          setConfirmedPasswordFocused(true);
-        }}
-        onBlur={() => {
-          setConfirmedPasswordFocused(false);
-        }}
-        errors={[
+        customErrors={[
           {
-            visible: confirmedPasswordError ?? false,
+            visible: (value, focused) =>
+              focused === true && password.value !== value,
             text: "비밀번호가 일치하지 않아요.",
           },
         ]}
@@ -140,22 +116,12 @@ export default function Test() {
 
       <button
         onClick={() => {
-          naviate("/login");
+          naviate("/sign-in");
         }}
       >
         로그인
       </button>
-      <button
-        onClick={() => {
-          login({
-            email,
-            password,
-          });
-        }}
-        disabled={buttonDisabled}
-      >
-        회원가입
-      </button>
+      <button disabled={buttonDisabled}>회원가입</button>
     </div>
   );
 }
